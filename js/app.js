@@ -746,7 +746,7 @@ function deleteCustomer(id) {
 
     const customers = getCustomers();
     const filtered = customers.filter(c => c.id !== id);
-    saveCustomers(filterers);
+    saveCustomers(filtered);
     renderCustomers();
     showToast('Müşteri silindi.');
 }
