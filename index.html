@@ -58,6 +58,14 @@
         .property-card { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s ease; cursor: pointer; }
         .property-card:hover { transform: translateY(-5px); box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
         .property-image { position: relative; height: 200px; overflow: hidden; background: #e0e0e0; display: flex; align-items: center; justify-content: center; }
+        .gallery-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.6); color: #fff; border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+        .gallery-nav:hover { background: rgba(0,0,0,0.8); }
+        .gallery-prev { left: 10px; }
+        .gallery-next { right: 10px; }
+        .gallery-dots { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 10; }
+        .gallery-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.5); cursor: pointer; transition: background 0.2s; }
+        .gallery-dot.active { background: #fff; }
+        .gallery-delete { position: absolute; top: 10px; right: 10px; background: rgba(198,40,40,0.9); color: #fff; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 1rem; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; }
         .property-image img { width: 100%; height: 100%; object-fit: cover; }
         .property-badge { position: absolute; top: 12px; left: 12px; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #fff; text-transform: uppercase; }
         .badge-satilik { background: #2e7d32; }
@@ -970,6 +978,77 @@
         '</div>';
     }
 
+    var currentGalleryIndex = 0;
+    var currentGalleryImages = [];
+
+    function showGallery(images, startIndex) {
+        currentGalleryImages = images && images.length > 0 ? images : [];
+        currentGalleryIndex = startIndex || 0;
+        renderGallery();
+    }
+
+    function renderGallery() {
+        var container = document.getElementById('galleryContainer');
+        if (!container) return;
+
+        if (currentGalleryImages.length === 0) {
+            container.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:4rem;background:#e0e0e0;">🏠</div>';
+            return;
+        }
+
+        var img = currentGalleryImages[currentGalleryIndex];
+        var html = '<img src="' + img + '" style="width:100%;height:100%;object-fit:contain;background:#000;" onerror="this.parentElement.innerHTML=\'<div style=width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:4rem;background:#e0e0e0;>🏠</div>\'">';
+
+        if (currentGalleryImages.length > 1) {
+            html += '<button class="gallery-nav gallery-prev" onclick="event.stopPropagation();galleryNavigate(-1)">◀</button>';
+            html += '<button class="gallery-nav gallery-next" onclick="event.stopPropagation();galleryNavigate(1)">▶</button>';
+            html += '<div class="gallery-dots">';
+            for (var i = 0; i < currentGalleryImages.length; i++) {
+                html += '<span class="gallery-dot' + (i === currentGalleryIndex ? ' active' : '') + '" onclick="event.stopPropagation();galleryGoTo(' + i + ')"></span>';
+            }
+            html += '</div>';
+        }
+
+        html += '<button class="gallery-delete" onclick="event.stopPropagation();deleteGalleryImage()" title="Fotoğrafı Sil">🗑️</button>';
+        html += '<span style="position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,0.6);color:#fff;padding:2px 8px;border-radius:10px;font-size:0.75rem;">' + (currentGalleryIndex + 1) + '/' + currentGalleryImages.length + '</span>';
+
+        container.innerHTML = html;
+    }
+
+    function galleryNavigate(direction) {
+        var len = currentGalleryImages.length;
+        if (len === 0) return;
+        currentGalleryIndex = (currentGalleryIndex + direction + len) % len;
+        renderGallery();
+    }
+
+    function galleryGoTo(index) {
+        currentGalleryIndex = index;
+        renderGallery();
+    }
+
+    function deleteGalleryImage() {
+        if (currentGalleryImages.length === 0) return;
+        if (!confirm('Bu fotoğrafı silmek istediğinize emin misiniz?')) return;
+
+        currentGalleryImages.splice(currentGalleryIndex, 1);
+        if (currentGalleryIndex >= currentGalleryImages.length) {
+            currentGalleryIndex = Math.max(0, currentGalleryImages.length - 1);
+        }
+
+        var properties = getProperties();
+        for (var i = 0; i < properties.length; i++) {
+            if (properties[i].id === editingPropertyId) {
+                properties[i].images = currentGalleryImages.slice();
+                saveProperties(properties);
+                break;
+            }
+        }
+
+        showToast('Fotoğraf silindi.');
+        renderGallery();
+    }
+
     // ============================================
     // PROPERTY DETAIL MODAL
     // ============================================
@@ -988,12 +1067,10 @@
         var settings = getSettings();
         var imageUrl = property.images && property.images.length > 0 ? property.images[0] : null;
 
-        var imageHtml = imageUrl
-            ? '<img src="' + imageUrl + '" alt="' + property.title + '" class="detail-image" onerror="this.style.display=\'none\'">'
-            : '<div class="detail-image" style="display:flex;align-items:center;justify-content:center;font-size:4rem;background:#e0e0e0;">🏠</div>';
+        var galleryHtml = '<div id="galleryContainer" style="position:relative;width:100%;height:300px;background:#e0e0e0;"></div>';
 
         var modalBody = document.getElementById('modalBody');
-        modalBody.innerHTML = imageHtml +
+        modalBody.innerHTML = galleryHtml +
             '<div class="detail-grid">' +
                 '<div class="detail-item"><label>İlan Tipi</label><span>' + property.type + '</span></div>' +
                 '<div class="detail-item"><label>Durum</label><span>' + property.status + '</span></div>' +
@@ -1018,6 +1095,7 @@
             '<button class="btn btn-secondary" onclick="closeModal()">✕ Kapat</button>';
 
         document.getElementById('propertyModal').classList.add('active');
+        showGallery(property.images, 0);
     }
 
     function closeModal() {
