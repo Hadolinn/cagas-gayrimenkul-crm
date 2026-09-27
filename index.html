@@ -1016,6 +1016,7 @@
         modalFooter.innerHTML =
             '<a href="' + getWhatsAppLink(property.phone, 'Merhaba, "' + property.title + '" ilanı hakkında bilgi alabilir miyim?') + '" target="_blank" class="btn btn-whatsapp">💬 WhatsApp</a>' +
             '<a href="tel:' + property.phone + '" class="btn btn-success">📞 Ara</a>' +
+            '<button class="btn btn-primary" onclick="editProperty(' + property.id + ')">✏️ Düzenle</button>' +
             '<button class="btn btn-danger" onclick="confirmDeleteProperty(' + property.id + ')">🗑️ Sil</button>' +
             '<button class="btn btn-secondary" onclick="closeModal()">✕ Kapat</button>';
 
@@ -1030,6 +1031,7 @@
     // DELETE PROPERTY
     // ============================================
     var propertyToDelete = null;
+    var editingPropertyId = null;
 
     function confirmDeleteProperty(id) {
         propertyToDelete = id;
@@ -1055,6 +1057,38 @@
         }
     }
 
+    function editProperty(id) {
+        var properties = getProperties();
+        var property = null;
+        for (var i = 0; i < properties.length; i++) {
+            if (properties[i].id === id) {
+                property = properties[i];
+                break;
+            }
+        }
+        if (!property) return;
+
+        editingPropertyId = id;
+        document.getElementById('propTitle').value = property.title;
+        document.getElementById('propType').value = property.type;
+        document.getElementById('propStatus').value = property.status;
+        document.getElementById('propPrice').value = property.price;
+        document.getElementById('propArea').value = property.area;
+        document.getElementById('propRooms').value = property.rooms === '-' ? '' : property.rooms;
+        document.getElementById('propLocation').value = property.location;
+        document.getElementById('propOwnerName').value = property.ownerName;
+        document.getElementById('propPhone').value = property.phone;
+        document.getElementById('propDescription').value = property.description || '';
+        document.getElementById('propImage1').value = property.images[0] || '';
+        document.getElementById('propImage2').value = property.images[1] || '';
+        document.getElementById('propImage3').value = property.images[2] || '';
+
+        document.querySelector('#page-add-property h1').innerHTML = '✏️ İlanı Düzenle';
+        document.querySelector('#page-add-property button[type="submit"]').innerHTML = '💾 Güncelle';
+        navigateTo('add-property');
+        window.scrollTo(0, 0);
+    }
+
     // ============================================
     // PROPERTY FORM
     // ============================================
@@ -1063,8 +1097,7 @@
 
         var properties = getProperties();
 
-        var newProperty = {
-            id: generateId(),
+        var formData = {
             title: document.getElementById('propTitle').value,
             type: document.getElementById('propType').value,
             status: document.getElementById('propStatus').value,
@@ -1079,20 +1112,37 @@
                 document.getElementById('propImage1').value,
                 document.getElementById('propImage2').value,
                 document.getElementById('propImage3').value
-            ].filter(function(img) { return img !== ''; }),
-            createdAt: new Date().toISOString()
+            ].filter(function(img) { return img !== ''; })
         };
 
-        properties.push(newProperty);
-        saveProperties(properties);
+        if (editingPropertyId) {
+            for (var i = 0; i < properties.length; i++) {
+                if (properties[i].id === editingPropertyId) {
+                    properties[i] = Object.assign({}, properties[i], formData);
+                    break;
+                }
+            }
+            saveProperties(properties);
+            showToast('İlan başarıyla güncellendi!');
+            editingPropertyId = null;
+            document.querySelector('#page-add-property h1').innerHTML = '➕ Yeni İlan Ekle';
+            document.querySelector('#page-add-property button[type="submit"]').innerHTML = '💾 Kaydet';
+        } else {
+            var newProperty = Object.assign({ id: generateId(), createdAt: new Date().toISOString() }, formData);
+            properties.push(newProperty);
+            saveProperties(properties);
+            showToast('İlan başarıyla eklendi!');
+        }
 
-        showToast('İlan başarıyla eklendi!');
         resetForm();
         navigateTo('portfolio');
     }
 
     function resetForm() {
         document.getElementById('propertyForm').reset();
+        editingPropertyId = null;
+        document.querySelector('#page-add-property h1').innerHTML = '➕ Yeni İlan Ekle';
+        document.querySelector('#page-add-property button[type="submit"]').innerHTML = '💾 Kaydet';
     }
 
     // ============================================
@@ -1125,6 +1175,7 @@
                     '<td>' + (c.interest || '-') + '</td>' +
                     '<td>' +
                         '<button class="btn btn-small btn-whatsapp" onclick="window.open(\'' + getWhatsAppLink(c.phone, 'Merhaba ' + c.name + ', ' + getSettings().companyName + ' web sitesinden yazıyorum.') + '\')">💬</button>' +
+                        '<button class="btn btn-small btn-primary" onclick="editCustomer(' + c.id + ')">✏️</button>' +
                         '<button class="btn btn-small btn-danger" onclick="deleteCustomer(' + c.id + ')">🗑️</button>' +
                     '</td>' +
                 '</tr>';
@@ -1156,6 +1207,36 @@
         saveCustomers(customers);
         renderCustomers();
         showToast('Müşteri başarıyla eklendi!');
+    }
+
+    function editCustomer(id) {
+        var customers = getCustomers();
+        var customer = null;
+        for (var i = 0; i < customers.length; i++) {
+            if (customers[i].id === id) {
+                customer = customers[i];
+                break;
+            }
+        }
+        if (!customer) return;
+
+        var name = prompt('Ad Soyad:', customer.name);
+        if (!name) return;
+
+        var phone = prompt('Telefon:', customer.phone);
+        if (!phone) return;
+
+        var email = prompt('E-posta:', customer.email || '');
+        var interest = prompt('İlgi Alanı:', customer.interest || '');
+
+        customer.name = name;
+        customer.phone = phone;
+        customer.email = email;
+        customer.interest = interest;
+
+        saveCustomers(customers);
+        renderCustomers();
+        showToast('Müşteri güncellendi.');
     }
 
     function deleteCustomer(id) {
