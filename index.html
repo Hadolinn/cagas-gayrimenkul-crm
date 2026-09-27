@@ -414,16 +414,13 @@
                             <textarea id="propDescription" rows="4" placeholder="İlan açıklaması..."></textarea>
                         </div>
                         <div class="form-group">
-                            <label>Fotoğraf URL 1</label>
-                            <input type="url" id="propImage1" placeholder="https://example.com/image1.jpg">
+                            <label>Fotoğraflar (Telefon Galerisinden Seçin)</label>
+                            <input type="file" id="propImages" accept="image/*" multiple onchange="handleImageUpload(this)">
+                            <p style="font-size: 0.8rem; color: #757575; margin-top: 5px;">📱 Fotoğraflar otomatik olarak sıkıştırılacak ve kaydedilecek</p>
                         </div>
                         <div class="form-group">
-                            <label>Fotoğraf URL 2</label>
-                            <input type="url" id="propImage2" placeholder="https://example.com/image2.jpg">
-                        </div>
-                        <div class="form-group">
-                            <label>Fotoğraf URL 3</label>
-                            <input type="url" id="propImage3" placeholder="https://example.com/image3.jpg">
+                            <label>Seçilen Fotoğraflar</label>
+                            <div id="imagePreview" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;"></div>
                         </div>
                         <div class="form-actions">
                             <button type="submit" class="btn btn-primary btn-large">💾 Kaydet</button>
@@ -1079,9 +1076,22 @@
         document.getElementById('propOwnerName').value = property.ownerName;
         document.getElementById('propPhone').value = property.phone;
         document.getElementById('propDescription').value = property.description || '';
-        document.getElementById('propImage1').value = property.images[0] || '';
-        document.getElementById('propImage2').value = property.images[1] || '';
-        document.getElementById('propImage3').value = property.images[2] || '';
+
+        selectedImages = property.images ? property.images.slice() : [];
+        var preview = document.getElementById('imagePreview');
+        preview.innerHTML = '';
+        selectedImages.forEach(function(img, idx) {
+            if (img) {
+                var previewImg = document.createElement('img');
+                previewImg.src = img;
+                previewImg.style.width = '80px';
+                previewImg.style.height = '80px';
+                previewImg.style.objectFit = 'cover';
+                previewImg.style.borderRadius = '8px';
+                previewImg.style.border = '2px solid #e0e0e0';
+                preview.appendChild(previewImg);
+            }
+        });
 
         document.querySelector('#page-add-property h1').innerHTML = '✏️ İlanı Düzenle';
         document.querySelector('#page-add-property button[type="submit"]').innerHTML = '💾 Güncelle';
@@ -1092,6 +1102,67 @@
     // ============================================
     // PROPERTY FORM
     // ============================================
+    var selectedImages = [];
+
+    function handleImageUpload(input) {
+        var files = input.files;
+        if (!files || files.length === 0) return;
+
+        selectedImages = [];
+        var preview = document.getElementById('imagePreview');
+        preview.innerHTML = '';
+
+        var loadedCount = 0;
+        var totalFiles = Math.min(files.length, 3);
+
+        for (var i = 0; i < totalFiles; i++) {
+            (function(file, index) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var img = new Image();
+                    img.onload = function() {
+                        var canvas = document.createElement('canvas');
+                        var ctx = canvas.getContext('2d');
+
+                        var maxWidth = 800;
+                        var maxHeight = 600;
+                        var width = img.width;
+                        var height = img.height;
+
+                        if (width > maxWidth) {
+                            height = (maxWidth / width) * height;
+                            width = maxWidth;
+                        }
+                        if (height > maxHeight) {
+                            width = (maxHeight / height) * width;
+                            height = maxHeight;
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        var compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                        selectedImages[index] = compressedDataUrl;
+
+                        var previewImg = document.createElement('img');
+                        previewImg.src = compressedDataUrl;
+                        previewImg.style.width = '80px';
+                        previewImg.style.height = '80px';
+                        previewImg.style.objectFit = 'cover';
+                        previewImg.style.borderRadius = '8px';
+                        previewImg.style.border = '2px solid #e0e0e0';
+                        preview.appendChild(previewImg);
+
+                        loadedCount++;
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            })(files[i], i);
+        }
+    }
+
     function handlePropertySubmit(e) {
         e.preventDefault();
 
@@ -1108,11 +1179,7 @@
             ownerName: document.getElementById('propOwnerName').value,
             phone: document.getElementById('propPhone').value,
             description: document.getElementById('propDescription').value,
-            images: [
-                document.getElementById('propImage1').value,
-                document.getElementById('propImage2').value,
-                document.getElementById('propImage3').value
-            ].filter(function(img) { return img !== ''; })
+            images: selectedImages.filter(function(img) { return img; })
         };
 
         if (editingPropertyId) {
@@ -1140,6 +1207,8 @@
 
     function resetForm() {
         document.getElementById('propertyForm').reset();
+        selectedImages = [];
+        document.getElementById('imagePreview').innerHTML = '';
         editingPropertyId = null;
         document.querySelector('#page-add-property h1').innerHTML = '➕ Yeni İlan Ekle';
         document.querySelector('#page-add-property button[type="submit"]').innerHTML = '💾 Kaydet';
