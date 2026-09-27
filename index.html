@@ -19,8 +19,8 @@
         .sidebar-header { padding: 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); }
         .logo { display: flex; align-items: center; gap: 12px; font-size: 1.3rem; font-weight: 700; color: #fff; }
         .logo-icon { width: 40px; height: 40px; background: #ff6f00; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
-        .sidebar-toggle { background: none; border: none; color: #e8eaf6; font-size: 1.2rem; cursor: pointer; padding: 8px; border-radius: 8px; transition: all 0.3s ease; }
-        .sidebar-toggle:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .sidebar-toggle { position: fixed; top: 15px; left: 15px; z-index: 2000; background: #1a237e; color: #fff; border: none; font-size: 1.2rem; cursor: pointer; padding: 10px 14px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); transition: all 0.3s ease; display: none; }
+        .sidebar-toggle:hover { background: #534bae; }
         .sidebar-nav { flex: 1; padding: 15px 0; overflow-y: auto; }
         .nav-item { display: flex; align-items: center; gap: 12px; padding: 14px 20px; color: #e8eaf6; text-decoration: none; transition: all 0.3s ease; border-left: 3px solid transparent; font-size: 0.95rem; cursor: pointer; }
         .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
@@ -151,7 +151,38 @@
             .sidebar .nav-item { justify-content: flex-start; padding: 14px 20px; }
             .sidebar .logo { justify-content: flex-start; }
             .sidebar.open { transform: translateX(0); }
-            .main-content { margin-left: 0; }
+            .sidebar-toggle { display: block; }
+            .sidebar.open .sidebar-toggle { left: 275px; }
+            .main-content { margin-left: 0; padding-top: 60px; }
+            .page-header { padding-top: 50px; }
+            .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+            .stat-card { padding: 15px; }
+            .stat-icon { width: 40px; height: 40px; font-size: 1.1rem; }
+            .stat-info h3 { font-size: 1.2rem; }
+            .property-grid { grid-template-columns: 1fr; }
+            .property-image { height: 150px; }
+            .customers-table { min-width: 500px; }
+            .form-row { grid-template-columns: 1fr; gap: 0; }
+            .detail-grid { grid-template-columns: 1fr; }
+            .modal-content { max-width: 95%; }
+            .modal-footer { flex-wrap: wrap; }
+            .btn { padding: 8px 16px; font-size: 0.85rem; }
+            .btn-large { padding: 12px 24px; font-size: 0.95rem; }
+            .filter-bar { flex-direction: column; }
+            .filter-bar select, .filter-bar .btn { width: 100%; }
+            .search-box { width: 100%; }
+            .search-box input { width: 100%; }
+            .header-actions { width: 100%; }
+            .page-header h1 { font-size: 1.3rem; }
+            .page-header { flex-direction: column; align-items: flex-start; }
+        }
+        @media (max-width: 480px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .property-image { height: 120px; }
+            .page-header h1 { font-size: 1.1rem; }
+            .btn { padding: 6px 12px; font-size: 0.8rem; }
+            .btn-large { padding: 10px 20px; font-size: 0.9rem; }
+        }
             .page-header { flex-direction: column; align-items: flex-start; }
             .header-actions { width: 100%; flex-direction: column; }
             .search-box input { width: 100%; }
@@ -164,6 +195,7 @@
     </style>
 </head>
 <body>
+    <button class="sidebar-toggle" id="sidebarToggle">☰</button>
     <div class="app-container">
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
@@ -171,7 +203,6 @@
                     <div class="logo-icon">🏢</div>
                     <span>Çağdaş GYİ</span>
                 </div>
-                <button class="sidebar-toggle" id="sidebarToggle">☰</button>
             </div>
             <nav class="sidebar-nav">
                 <a class="nav-item active" data-page="dashboard" onclick="navigateTo('dashboard')">
